@@ -2,6 +2,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import serial
+import time
 
 # conexion arduino
 arduino=None
@@ -27,9 +28,13 @@ servo_pinky=0
 
 alpha=0.3
 
+# control de frecuencia
+last_send=0
+
 # calibracion
 open_hand=[160,170,170,170,170]
 closed_hand=[90,40,40,40,40]
+
 
 def limitar_velocidad(actual, objetivo, paso=4):
 
@@ -38,6 +43,14 @@ def limitar_velocidad(actual, objetivo, paso=4):
 
     if objetivo < actual - paso:
         return actual - paso
+
+    return objetivo
+
+
+def zona_muerta(actual, objetivo, zona=3):
+
+    if abs(objetivo-actual) < zona:
+        return actual
 
     return objetivo
 
@@ -102,19 +115,45 @@ while True:
         target_ring=max(0,min(180,target_ring))
         target_pinky=max(0,min(180,target_pinky))
 
-        # suavizado
+        # redondeo para reducir jitter
+        target_thumb=round(target_thumb/2)*2
+        target_index=round(target_index/2)*2
+        target_middle=round(target_middle/2)*2
+        target_ring=round(target_ring/2)*2
+        target_pinky=round(target_pinky/2)*2
+
+        # zona muerta
+        target_thumb=zona_muerta(servo_thumb,target_thumb)
+        target_index=zona_muerta(servo_index,target_index)
+        target_middle=zona_muerta(servo_middle,target_middle)
+        target_ring=zona_muerta(servo_ring,target_ring)
+        target_pinky=zona_muerta(servo_pinky,target_pinky)
+
+        # filtro exponencial
+        servo_thumb  = int(servo_thumb  + alpha*(target_thumb  - servo_thumb))
+        servo_index  = int(servo_index  + alpha*(target_index  - servo_index))
+        servo_middle = int(servo_middle + alpha*(target_middle - servo_middle))
+        servo_ring   = int(servo_ring   + alpha*(target_ring   - servo_ring))
+        servo_pinky  = int(servo_pinky  + alpha*(target_pinky  - servo_pinky))
+
+        # limitar velocidad
         servo_thumb=limitar_velocidad(servo_thumb,target_thumb)
         servo_index=limitar_velocidad(servo_index,target_index)
         servo_middle=limitar_velocidad(servo_middle,target_middle)
         servo_ring=limitar_velocidad(servo_ring,target_ring)
         servo_pinky=limitar_velocidad(servo_pinky,target_pinky)
 
-        datos=f"{servo_thumb},{servo_index},{servo_middle},{servo_ring},{servo_pinky}"
+        # enviar datos cada 30 ms
+        if time.time()-last_send > 0.03:
 
-        print(datos)
+            datos=f"{servo_thumb},{servo_index},{servo_middle},{servo_ring},{servo_pinky}"
 
-        if arduino:
-            arduino.write((datos+"\n").encode())
+            print(datos)
+
+            if arduino:
+                arduino.write((datos+"\n").encode())
+
+            last_send=time.time()
 
         cv2.putText(frame,datos,(20,50),
         cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
@@ -129,12 +168,10 @@ while True:
 
     key=cv2.waitKey(1)&0xFF
 
-    # calibrar abierta
     if key==ord('o') and res.multi_hand_landmarks:
         open_hand=[thumb,index,middle,ring,pinky]
         print("Calibracion mano abierta guardada")
 
-    # calibrar cerrada
     if key==ord('c') and res.multi_hand_landmarks:
         closed_hand=[thumb,index,middle,ring,pinky]
         print("Calibracion mano cerrada guardada")
