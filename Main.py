@@ -4,8 +4,9 @@ import numpy as np
 import serial
 import time
 
-WRIST_MIN = 20
-WRIST_MAX = 160
+WRIST_MIN = 50
+WRIST_NEUTRO = 90
+WRIST_MAX = 130
 
 # conexion arduino
 arduino=None
@@ -28,7 +29,7 @@ servo_index=0
 servo_middle=0
 servo_ring=0
 servo_pinky=0
-servo_wrist=0
+servo_wrist=WRIST_NEUTRO
 
 alpha=0.3
 
@@ -80,17 +81,22 @@ def map_servo(valor,in_min,in_max,out_min,out_max):
 
     return int((valor-in_min)*(out_max-out_min)/(in_max-in_min)+out_min)
 
-def rotacion_mano(lm):
+def rotacion_mano_3d(lm):
 
-    x1 = lm[5].x
-    y1 = lm[5].y
+    wrist = np.array([lm[0].x, lm[0].y, lm[0].z])
+    index = np.array([lm[5].x, lm[5].y, lm[5].z])
+    pinky = np.array([lm[17].x, lm[17].y, lm[17].z])
 
-    x2 = lm[17].x
-    y2 = lm[17].y
+    v1 = index - wrist
+    v2 = pinky - wrist
 
-    ang = np.degrees(np.arctan2(y2-y1,x2-x1))
+    normal = np.cross(v1, v2)
 
-    return ang
+    rot = np.degrees(np.arctan2(normal[1], normal[2]))
+
+    return rot
+
+datos="---"
 
 while True:
 
@@ -113,7 +119,7 @@ while True:
         middle=angulo([lm[9].x,lm[9].y],[lm[10].x,lm[10].y],[lm[12].x,lm[12].y])
         ring=angulo([lm[13].x,lm[13].y],[lm[14].x,lm[14].y],[lm[16].x,lm[16].y])
         pinky=angulo([lm[17].x,lm[17].y],[lm[18].x,lm[18].y],[lm[20].x,lm[20].y])
-        rot = rotacion_mano(lm)
+        rot = rotacion_mano_3d(lm)
 
         valores=[thumb,index,middle,ring,pinky]
 
@@ -123,7 +129,7 @@ while True:
         target_middle = map_servo(valores[2],closed_hand[2],open_hand[2],180,0)
         target_ring   = map_servo(valores[3],closed_hand[3],open_hand[3],180,0)
         target_pinky  = map_servo(valores[4],closed_hand[4],open_hand[4],180,0)
-        target_wrist = map_servo(rot,-90,90,WRIST_MIN,WRIST_MAX)
+        target_wrist = map_servo(rot,-60,60,WRIST_MIN,WRIST_MAX)
 
 
         # limitar rango
@@ -132,7 +138,6 @@ while True:
         target_middle=max(0,min(180,target_middle))
         target_ring=max(0,min(180,target_ring))
         target_pinky=max(0,min(180,target_pinky))
-        target_wrist = max(0,min(180,target_wrist))
         target_wrist = max(WRIST_MIN,min(WRIST_MAX,target_wrist))
         
 
