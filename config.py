@@ -1,0 +1,13 @@
+WRIST_MIN = 20
+WRIST_NEUTRO = 90
+WRIST_MAX = 160
+
+OFFSET_ROT = 173
+
+alpha = 0.3
+
+open_hand = [160,170,170,170,170]
+closed_hand = [90,40,40,40,40]
+
+SERIAL_PORT = "COM8"
+BAUDRATE = 115200
