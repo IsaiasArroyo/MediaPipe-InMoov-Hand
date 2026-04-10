@@ -1,21 +1,18 @@
 import cv2
 import mediapipe as mp
-import numpy as np
-import serial
 import time
 
-WRIST_MIN = 20
-WRIST_NEUTRO = 90
-WRIST_MAX = 160
-OFFSET_ROT = 173
+from config import *
+from serial_comm import conectar,enviar
 
-# conexion arduino
-arduino=None
-try:
-    arduino = serial.Serial('COM8',115200)
-    print("Arduino conectado")
-except:
-    print("Modo simulacion (sin Arduino)")
+from utils.math_utils import angulo
+from vision.hand_rotation import rotacion_mano_3d
+
+from control.fingers_controller import calcular_dedos
+from control.wrist_controller import calcular_muñeca
+
+
+conectar()
 
 mp_hands = mp.solutions.hands
 mp_draw = mp.solutions.drawing_utils
@@ -55,35 +52,15 @@ while True:
         ring=angulo([lm[13].x,lm[13].y],[lm[14].x,lm[14].y],[lm[16].x,lm[16].y])
         pinky=angulo([lm[17].x,lm[17].y],[lm[18].x,lm[18].y],[lm[20].x,lm[20].y])
 
-        rot = rotacion_mano_3d(lm)
-        rot = rot - OFFSET_ROT
+        rot=rotacion_mano_3d(lm)
+        rot=rot-OFFSET_ROT
 
-        target_thumb  = map_servo(thumb,closed_hand[0],open_hand[0],180,0)
-        target_index  = map_servo(index,closed_hand[1],open_hand[1],180,0)
-        target_middle = map_servo(middle,closed_hand[2],open_hand[2],180,0)
-        target_ring   = map_servo(ring,closed_hand[3],open_hand[3],180,0)
-        target_pinky  = map_servo(pinky,closed_hand[4],open_hand[4],180,0)
-        target_wrist  = map_servo(rot,-60,60,WRIST_MIN,WRIST_MAX)
+        servo_thumb,servo_index,servo_middle,servo_ring,servo_pinky = calcular_dedos(
+            [thumb,index,middle,ring,pinky],
+            [servo_thumb,servo_index,servo_middle,servo_ring,servo_pinky]
+        )
 
-        target_thumb=max(0,min(180,target_thumb))
-        target_index=max(0,min(180,target_index))
-        target_middle=max(0,min(180,target_middle))
-        target_ring=max(0,min(180,target_ring))
-        target_pinky=max(0,min(180,target_pinky))
-        target_wrist=max(WRIST_MIN,min(WRIST_MAX,target_wrist))
-
-        target_thumb=zona_muerta(servo_thumb,target_thumb)
-        target_index=zona_muerta(servo_index,target_index)
-        target_middle=zona_muerta(servo_middle,target_middle)
-        target_ring=zona_muerta(servo_ring,target_ring)
-        target_pinky=zona_muerta(servo_pinky,target_pinky)
-
-        servo_thumb=limitar_velocidad(servo_thumb,target_thumb)
-        servo_index=limitar_velocidad(servo_index,target_index)
-        servo_middle=limitar_velocidad(servo_middle,target_middle)
-        servo_ring=limitar_velocidad(servo_ring,target_ring)
-        servo_pinky=limitar_velocidad(servo_pinky,target_pinky)
-        servo_wrist=limitar_velocidad(servo_wrist,target_wrist)
+        servo_wrist = calcular_muñeca(rot,servo_wrist)
 
         if time.time()-last_send>0.03:
 
