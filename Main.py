@@ -4,9 +4,10 @@ import numpy as np
 import serial
 import time
 
-WRIST_MIN = 50
+WRIST_MIN = 20
 WRIST_NEUTRO = 90
-WRIST_MAX = 130
+WRIST_MAX = 160
+OFFSET_ROT = 173
 
 # conexion arduino
 arduino=None
@@ -120,6 +121,7 @@ while True:
         ring=angulo([lm[13].x,lm[13].y],[lm[14].x,lm[14].y],[lm[16].x,lm[16].y])
         pinky=angulo([lm[17].x,lm[17].y],[lm[18].x,lm[18].y],[lm[20].x,lm[20].y])
         rot = rotacion_mano_3d(lm)
+        rot = rot - OFFSET_ROT
 
         valores=[thumb,index,middle,ring,pinky]
 
