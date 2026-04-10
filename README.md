@@ -45,22 +45,42 @@ El Arduino controla los servomotores de la mano utilizando un **controlador PCA9
 ```
 MediaPipe
 │
-├── main.py
-├── config.py
-├── serial_comm.py
+├── python
+│   ├── main.py
+│   ├── config.py
+│   ├── serial_comm.py
+│   ├── control
+│   ├── vision
+│   └── utils
 │
-├── vision
-│   └── hand_rotation.py
+├── arduino
+│   └── inmoov
+│       │
+│       ├── InMoov_Hand_Controller
+│       │   └── InMoov_Hand_Controller.ino
+│       │
+│       ├── CalibracionServos
+│       │   └── CalibracionServos.ino
+│       │
+│       └── PCA9685
+│           └── PCA9685.ino
 │
-├── control
-│   ├── fingers_controller.py
-│   ├── wrist_controller.py
-│   ├── filters.py
-│   └── mapping.py
-│
-└── utils
-    └── math_utils.py
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
+
+---
+
+# Requisitos
+
+Este proyecto fue probado con:
+
+```
+Python 3.10.11
+```
+
+Se recomienda usar **un entorno virtual** para evitar conflictos de dependencias.
 
 ---
 
@@ -78,7 +98,39 @@ Entrar a la carpeta del proyecto:
 cd MediaPipe-InMoov-Hand
 ```
 
-Instalar dependencias:
+---
+
+# Crear entorno virtual
+
+Crear el entorno virtual con:
+
+```
+python -m venv venv
+```
+
+Esto creará una carpeta llamada **venv** con el entorno de Python.
+
+---
+
+# Activar entorno virtual
+
+En **Windows**:
+
+```
+venv\Scripts\activate
+```
+
+Si se activó correctamente verás algo como:
+
+```
+(venv) C:\MediaPipe-InMoov-Hand>
+```
+
+---
+
+# Instalar dependencias
+
+Con el entorno virtual activo ejecutar:
 
 ```
 pip install -r requirements.txt
@@ -87,6 +139,12 @@ pip install -r requirements.txt
 ---
 
 # Ejecución
+
+Entrar a la carpeta de Python:
+
+```
+cd python
+```
 
 Ejecutar el programa principal:
 
@@ -101,7 +159,7 @@ python main.py
 Antes de ejecutar el programa, asegúrate de configurar correctamente el puerto serial en el archivo:
 
 ```
-config.py
+python/config.py
 ```
 
 Ejemplo:
@@ -111,3 +169,22 @@ SERIAL_PORT = "COM8"
 ```
 
 ---
+
+# Firmware Arduino
+
+El firmware utilizado para controlar los servos se encuentra en:
+
+```
+arduino/inmoov/InMoov_Hand_Controller
+```
+
+Abrir el archivo en **Arduino IDE**:
+
+```
+InMoov_Hand_Controller.ino
+```
+
+y subirlo al Arduino antes de ejecutar el programa en Python.
+
+---
+
