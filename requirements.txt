@@ -1,4 +1,5 @@
-mediapipe==0.10.9
-opencv-python==4.8.1.78
-numpy==1.24.4
-pyserial==3.5
+mediapipe>=0.10.9
+opencv-python>=4.8
+numpy>=1.24
+pyserial>=3.5
+protobuf>=3.20
