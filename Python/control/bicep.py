@@ -22,12 +22,13 @@ def calcular_bicep(lm, lado="derecho"):
 
 def controlar_bicep(angulo_bicep, servo_actual):
 
-    # Limitar ángulo para evitar valores raros
+    # Limitar angulo real del brazo
     angulo_bicep = max(30, min(180, angulo_bicep))
 
-    # Mapear (invertido)
-    target = map_servo(angulo_bicep, 30, 180, BICEP_MAX, BICEP_MIN)
-
+    # Extendido = 0
+    # Flexionado = 75
+    target = map_servo(angulo_bicep, 180, 30, BICEP_MIN, BICEP_MAX)
+    
     # Limitar servo
     target = max(BICEP_MIN, min(BICEP_MAX, target))
 
