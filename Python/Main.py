@@ -34,6 +34,12 @@ servo_wrist = WRIST_NEUTRO
 servo_bicep = 90
 
 angulo_bicep = 0
+thumb = 0
+index = 0
+middle = 0
+ring = 0
+pinky = 0
+rot = 0
 
 last_send = 0
 
@@ -87,7 +93,16 @@ while True:
 
         datos = f"{servo_thumb},{servo_index},{servo_middle},{servo_ring},{servo_pinky},{servo_wrist},{servo_bicep}"
 
-        print(datos)
+        print(
+        f"Thumb: {int(thumb)} | "
+        f"Index: {int(index)} | "
+        f"Middle: {int(middle)} | "
+        f"Ring: {int(ring)} | "
+        f"Pinky: {int(pinky)} | "
+        f"Wrist: {int(rot)} | "
+        f"Bicep: {int(angulo_bicep)}"
+        )
+    
         enviar(datos)
 
         last_send = time.time()
