@@ -41,6 +41,7 @@ ring = 0
 pinky = 0
 rot = 0
 
+
 last_send = 0
 
 while True:
@@ -55,10 +56,15 @@ while True:
     res_hands = hands.process(rgb)
     res_pose = pose.process(rgb)
 
-    # ===== BICEP (POSE) =====
     if res_pose.pose_landmarks:
 
         lm_pose = res_pose.pose_landmarks.landmark
+
+        mp_draw.draw_landmarks(
+        frame,
+        res_pose.pose_landmarks,
+        mp_pose.POSE_CONNECTIONS
+        )
 
         angulo_bicep = calcular_bicep(lm_pose, "derecho")
         servo_bicep = controlar_bicep(angulo_bicep, servo_bicep)
