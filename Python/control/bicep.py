@@ -1,38 +1,118 @@
-from utils.math_utils import angulo
+import math
+
 from control.mapping import map_servo
 from control.filters import limitar_velocidad
 from config import BICEP_MIN, BICEP_MAX
 
 
+# =========================================================
+# CALCULO BICEP
+# Detecta flexion real del codo tipo "conejo"
+# =========================================================
 def calcular_bicep(lm, lado="derecho"):
 
+    # ==========================================
+    # LANDMARKS
+    # ==========================================
     if lado == "derecho":
-        shoulder = [lm[12].x, lm[12].y, lm[12].z]
-        elbow    = [lm[14].x, lm[14].y, lm[14].z]
-        wrist    = [lm[16].x, lm[16].y, lm[16].z]
+
+        shoulder = lm[12]
+        elbow    = lm[14]
+        wrist    = lm[16]
+
     else:
-        shoulder = [lm[11].x, lm[11].y, lm[11].z]
-        elbow    = [lm[13].x, lm[13].y, lm[13].z]
-        wrist    = [lm[15].x, lm[15].y, lm[15].z]
 
-    ang = angulo(shoulder, elbow, wrist)
+        shoulder = lm[11]
+        elbow    = lm[13]
+        wrist    = lm[15]
 
-    return ang
+    # ==========================================
+    # DISTANCIA HOMBRO -> MUÑECA
+    # ==========================================
+    dist_sw = math.sqrt(
+        (shoulder.x - wrist.x)**2 +
+        (shoulder.y - wrist.y)**2
+    )
+
+    # ==========================================
+    # LONGITUD TOTAL DEL BRAZO
+    # hombro -> codo + codo -> muñeca
+    # ==========================================
+    dist_se = math.sqrt(
+        (shoulder.x - elbow.x)**2 +
+        (shoulder.y - elbow.y)**2
+    )
+
+    dist_ew = math.sqrt(
+        (elbow.x - wrist.x)**2 +
+        (elbow.y - wrist.y)**2
+    )
+
+    largo_brazo = dist_se + dist_ew
+
+    # ==========================================
+    # EVITAR DIVISION POR CERO
+    # ==========================================
+    if largo_brazo == 0:
+        return 0
+
+    # ==========================================
+    # RELACION NORMALIZADA
+    # extendido ≈ 1.0
+    # flexionado ≈ 0.3
+    # ==========================================
+    relacion = dist_sw / largo_brazo
+
+    # limitar rango
+    relacion = max(0.3, min(1.0, relacion))
+
+    # ==========================================
+    # CONVERTIR A 0-180
+    # ==========================================
+    angulo_bicep = int(
+        (relacion - 0.3) / (1.0 - 0.3) * 180
+    )
+
+    # invertir
+    # extendido -> 0
+    # flexionado -> 180
+    angulo_bicep = 180 - angulo_bicep
+
+    return angulo_bicep
 
 
+# =========================================================
+# CONTROL SERVO BICEP
+# =========================================================
 def controlar_bicep(angulo_bicep, servo_actual):
 
-    # Valores reales detectados
-    angulo_bicep = max(75, min(165, angulo_bicep))
+    # ==========================================
+    # LIMITAR ANGULOS
+    # ==========================================
+    angulo_bicep = max(0, min(180, angulo_bicep))
 
-    # 165 = brazo extendido -> servo 0
-    # 75  = brazo flexionado -> servo 75
-    target = map_servo(angulo_bicep, 165, 75, BICEP_MIN, BICEP_MAX)
+    # ==========================================
+    # MAPEAR A SERVO
+    # ==========================================
+    target = map_servo(
+         angulo_bicep,
+        0,
+        180,
+         0,
+        75
+    )
 
-    # Limitar servo
+    # ==========================================
+    # LIMITAR SERVO
+    # ==========================================
     target = max(BICEP_MIN, min(BICEP_MAX, target))
 
-    # Suavizar movimiento
-    servo = limitar_velocidad(servo_actual, target)
+    # ==========================================
+    # SUAVIZAR MOVIMIENTO
+    # ==========================================
+    servo = limitar_velocidad(
+        servo_actual,
+        target
+    )
 
     return servo
