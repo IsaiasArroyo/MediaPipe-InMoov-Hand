@@ -7,54 +7,50 @@ Adafruit_PWMServoDriver pca9685 = Adafruit_PWMServoDriver();
 #define SERVOMAX 500
 
 // =====================================================
-// MODO SIMULACION
-// true  = movimientos automaticos
-// false = usar MediaPipe por Serial
-// =====================================================
-bool simulacion = false;
-
-// =====================================================
 // CANALES PCA9685
 // =====================================================
-#define thumb   0
-#define index   1
-#define majeure 2
-#define ring    3
-#define pinky   4
-#define wrist   5
-#define bicep   6
+#define THUMB_CH   0
+#define INDEX_CH   1
+#define MIDDLE_CH  2
+#define RING_CH    3
+#define PINKY_CH   4
+#define WRIST_CH   5
+#define BICEP_CH   6
+#define SHOULDER_CH 7
 
 // =====================================================
-// MOTOR HOMBRO
+// VARIABLES
 // =====================================================
-#define IN1 8
-#define IN2 9
-#define POT_HOMBRO A0
+char data[64];
 
 // =====================================================
-// CALIBRACION
+// MAPEO ANGULO -> PWM
 // =====================================================
-#define POT_MIN 125
-#define POT_MAX 1023
+int anguloToPWM(int angulo){
 
-#define TOLERANCIA 10
+  angulo = constrain(angulo, 0, 180);
 
-String data = "";
-
-// =====================================================
-// ANGULO -> PWM
-// =====================================================
-int angulo(int ang){
-
-  return map(ang, 0, 180, SERVOMIN, SERVOMAX);
+  return map(
+    angulo,
+    0,
+    180,
+    SERVOMIN,
+    SERVOMAX
+  );
 }
 
 // =====================================================
-// ANGULO -> POT
+// MOVER SERVO
 // =====================================================
-int anguloPot(int ang){
+void moverServo(int canal, int angulo){
 
-  return map(ang, 0, 180, POT_MIN, POT_MAX);
+  int pwm = anguloToPWM(angulo);
+
+  pca9685.setPWM(
+    canal,
+    0,
+    pwm
+  );
 }
 
 // =====================================================
@@ -62,26 +58,29 @@ int anguloPot(int ang){
 // =====================================================
 void setup() {
 
+  Wire.begin();
+
+  // IMPORTANTE
+  // Mejora estabilidad I2C
+  Wire.setClock(100000);
+
   Serial.begin(115200);
 
-  // Timeout serial
-  Serial.setTimeout(10);
-
-  // PCA9685
   pca9685.begin();
+
   pca9685.setPWMFreq(50);
 
-  // Posicion inicial segura
-  pca9685.setPWM(bicep, 0, angulo(0));
+  delay(500);
 
-  // Motor hombro
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-
-  Serial.println("Sistema iniciado");
+  // Posicion inicial
+  moverServo(THUMB_CH, 90);
+  moverServo(INDEX_CH, 90);
+  moverServo(MIDDLE_CH, 90);
+  moverServo(RING_CH, 90);
+  moverServo(PINKY_CH, 90);
+  moverServo(WRIST_CH, 90);
+  moverServo(BICEP_CH, 0);
+  moverServo(SHOULDER_CH, 90);
 }
 
 // =====================================================
@@ -89,176 +88,62 @@ void setup() {
 // =====================================================
 void loop() {
 
-  // =================================================
-  // MODO SIMULACION
-  // =================================================
-  if(simulacion){
+  // ===============================================
+  // LEER SERIAL
+  // ===============================================
+  if (Serial.available()) {
 
-    static int ang = 0;
-    static bool subir = true;
-
-    moverServos(
-      ang,
-      ang,
-      ang,
-      ang,
-      ang,
-      ang,
-      ang
+    int len = Serial.readBytesUntil(
+      '\n',
+      data,
+      sizeof(data) - 1
     );
 
-    moverHombro(90);
+    // terminar string
+    data[len] = '\0';
 
-    Serial.print("Simulacion: ");
-    Serial.println(ang);
+    // ===========================================
+    // VARIABLES
+    // ===========================================
+    int t,i,m,r,p,w,b,h;
 
-    // =============================================
-    // BICEP SOLO 0-75
-    // =============================================
-    if(subir){
+    // ===========================================
+    // PARSEAR DATOS
+    // ===========================================
+    int valores = sscanf(
+      data,
+      "%d,%d,%d,%d,%d,%d,%d,%d",
+      &t,&i,&m,&r,&p,&w,&b,&h
+    );
 
-      ang += 5;
+    // ===========================================
+    // VALIDAR
+    // ===========================================
+    if (valores == 8) {
 
-      if(ang >= 75){
+      t = constrain(t,0,180);
+      i = constrain(i,0,180);
+      m = constrain(m,0,180);
+      r = constrain(r,0,180);
+      p = constrain(p,0,180);
+      w = constrain(w,0,180);
+      b = constrain(b,0,180);
+      h = constrain(h,0,180);
 
-        ang = 75;
-        subir = false;
-      }
+      // =======================================
+      // MOVER SERVOS
+      // =======================================
+      moverServo(THUMB_CH,  t);
+      moverServo(INDEX_CH,  i);
+      moverServo(MIDDLE_CH, m);
+      moverServo(RING_CH,   r);
+      moverServo(PINKY_CH,  p);
+
+      moverServo(WRIST_CH,  w);
+
+      moverServo(BICEP_CH,  b);
+
+      moverServo(SHOULDER_CH, h);
     }
-    else{
-
-      ang -= 5;
-
-      if(ang <= 0){
-
-        ang = 0;
-        subir = true;
-      }
-    }
-
-    delay(200);
-  }
-
-  // =================================================
-  // MODO SERIAL / MEDIAPIPE
-  // =================================================
-  else{
-
-    if(Serial.available() > 0){
-
-      data = Serial.readStringUntil('\n');
-
-      // quitar espacios y saltos raros
-      data.trim();
-
-      int t,i,m,r,p,w,b,h;
-
-      // =========================================
-      // LEER 8 VALORES
-      // =========================================
-      int valores = sscanf(
-        data.c_str(),
-        "%d,%d,%d,%d,%d,%d,%d,%d",
-        &t,&i,&m,&r,&p,&w,&b,&h
-      );
-
-      // =========================================
-      // DEBUG SERIAL
-      // =========================================
-      Serial.print("RECIBIDO: ");
-      Serial.println(data);
-
-      // =========================================
-      // VALIDAR
-      // =========================================
-      if(valores == 8){
-
-        moverServos(t,i,m,r,p,w,b);
-
-        moverHombro(h);
-
-        Serial.println("DATOS OK");
-      }
-      else{
-
-        Serial.print("ERROR SERIAL -> ");
-        Serial.println(valores);
-      }
-    }
-  }
-}
-
-// =====================================================
-// CONTROL SERVOS PCA9685
-// =====================================================
-void moverServos(int t,int i,int m,int r,int p,int w,int b){
-
-  // =========================================
-  // SERVOS NORMALES
-  // =========================================
-  pca9685.setPWM(thumb,   0, angulo(t));
-  pca9685.setPWM(index,   0, angulo(i));
-  pca9685.setPWM(majeure, 0, angulo(m));
-  pca9685.setPWM(ring,    0, angulo(r));
-  pca9685.setPWM(pinky,   0, angulo(p));
-  pca9685.setPWM(wrist,   0, angulo(w));
-
-  // =========================================
-  // BICEP SOLO 0-75 REALES
-  // =========================================
-  b = constrain(b, 0, 75);
-
-  pca9685.setPWM(
-    bicep,
-    0,
-    angulo(b)
-  );
-
-  // =========================================
-  // DEBUG
-  // =========================================
-  Serial.print("Bicep Final: ");
-  Serial.println(b);
-}
-
-// =====================================================
-// CONTROL HOMBRO
-// =====================================================
-void moverHombro(int anguloDeseado){
-
-  int objetivo = anguloPot(anguloDeseado);
-
-  int posicion = analogRead(POT_HOMBRO);
-
-  Serial.print("Hombro: ");
-  Serial.print(posicion);
-  Serial.print(" -> ");
-  Serial.println(objetivo);
-
-  // =========================================
-  // MOVER ADELANTE
-  // =========================================
-  if(posicion < objetivo - TOLERANCIA){
-
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
-  }
-
-  // =========================================
-  // MOVER ATRAS
-  // =========================================
-  else if(posicion > objetivo + TOLERANCIA){
-
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-  }
-
-  // =========================================
-  // DETENER
-  // =========================================
-  else{
-
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, LOW);
   }
 }

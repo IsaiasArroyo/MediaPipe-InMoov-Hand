@@ -1,4 +1,4 @@
-def limitar_velocidad(actual, objetivo, paso=4):
+def limitar_velocidad(actual, objetivo, paso=10):
 
     if objetivo > actual + paso:
         return actual + paso
