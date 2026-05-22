@@ -5,7 +5,6 @@ import time
 from control.bicep import calcular_bicep, controlar_bicep
 from config import *
 from serial_comm import conectar, enviar
-
 from utils.math_utils import angulo
 from vision.hand_rotation import rotacion_mano_3d
 
@@ -37,6 +36,10 @@ hands = mp_hands.Hands(
 # CAMARA
 # =========================================================
 cap = cv2.VideoCapture(0)
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 # =========================================================
 # SERVOS
@@ -197,7 +200,7 @@ while True:
     # =====================================================
     # ENVIO SERIAL
     # =====================================================
-    if time.time() - last_send > 0.03:
+    if time.time() - last_send > 0.06:
 
         # =============================================
         # DATOS PARA ARDUINO
@@ -212,22 +215,22 @@ while True:
             f"{int(servo_pinky)},"
             f"{int(servo_wrist)},"
             f"{int(servo_bicep)},"
-            f"90\n"
+            f"90"
         )
 
         # =============================================
         # DEBUG
         # =============================================
-        print(
-            f"Thumb: {int(thumb)} | "
-            f"Index: {int(index)} | "
-            f"Middle: {int(middle)} | "
-            f"Ring: {int(ring)} | "
-            f"Pinky: {int(pinky)} | "
-            f"Wrist: {int(rot)} | "
-            f"Bicep: {int(angulo_bicep)} | "
-            f"Servo Bicep: {int(servo_bicep)}"
-        )
+        #print(
+        #    f"Thumb: {int(thumb)} | "
+        #    f"Index: {int(index)} | "
+        #    f"Middle: {int(middle)} | "
+        #    f"Ring: {int(ring)} | "
+        #    f"Pinky: {int(pinky)} | "
+        #    f"Wrist: {int(rot)} | "
+        #    f"Bicep: {int(angulo_bicep)} | "
+        #    f"Servo Bicep: {int(servo_bicep)}"
+        #)
 
         # =============================================
         # ENVIAR
@@ -263,6 +266,9 @@ while True:
         "InMoov Hand Control",
         frame
     )
+
+    # Limitar FPS del loop
+    time.sleep(0.01)
 
     # ESC para salir
     if cv2.waitKey(1) & 0xFF == 27:
