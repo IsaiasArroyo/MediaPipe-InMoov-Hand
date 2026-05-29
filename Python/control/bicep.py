@@ -1,7 +1,6 @@
 import math
-
 from control.mapping import map_servo
-from control.filters import limitar_velocidad
+from control.filters import suavizar
 from config import BICEP_MIN, BICEP_MAX
 
 
@@ -110,9 +109,10 @@ def controlar_bicep(angulo_bicep, servo_actual):
     # ==========================================
     # SUAVIZAR MOVIMIENTO
     # ==========================================
-    servo = limitar_velocidad(
+    servo = suavizar(
         servo_actual,
-        target
+        target,
+        alpha=0.35
     )
 
     return servo

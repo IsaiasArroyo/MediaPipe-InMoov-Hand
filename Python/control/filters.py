@@ -1,15 +1,9 @@
-def limitar_velocidad(actual, objetivo, paso=10):
+def suavizar(actual, objetivo, alpha=0.35):
 
-    if objetivo > actual + paso:
-        return actual + paso
-
-    if objetivo < actual - paso:
-        return actual - paso
-
-    return objetivo
+    return actual + (objetivo - actual) * alpha
 
 
-def zona_muerta(actual, objetivo, zona=3):
+def zona_muerta(actual, objetivo, zona=2):
 
     if abs(objetivo - actual) < zona:
         return actual

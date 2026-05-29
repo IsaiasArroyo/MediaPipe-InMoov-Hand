@@ -1,5 +1,5 @@
 from control.mapping import map_servo
-from control.filters import zona_muerta, limitar_velocidad
+from control.filters import zona_muerta, suavizar
 from config import open_hand, closed_hand
 
 def calcular_dedos(valores, servos):
@@ -23,6 +23,10 @@ def calcular_dedos(valores, servos):
 
         targets[i]=zona_muerta(servos[i],targets[i])
 
-        servos[i]=limitar_velocidad(servos[i],targets[i])
+        servos[i] = suavizar(
+            servos[i],
+            targets[i],
+            alpha=0.35
+        )
 
     return servos
