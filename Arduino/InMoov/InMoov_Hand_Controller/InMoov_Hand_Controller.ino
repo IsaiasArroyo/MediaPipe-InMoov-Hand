@@ -16,12 +16,21 @@ Adafruit_PWMServoDriver pca9685 = Adafruit_PWMServoDriver();
 #define PINKY_CH   4
 #define WRIST_CH   5
 #define BICEP_CH   6
-#define SHOULDER_CH 7
+
+// =====================================================
+// HOMBRO (MOTOR DC + PUENTE H)
+// =====================================================
+#define IN1 8
+#define IN2 9
+
+#define POT_PIN A0
 
 // =====================================================
 // VARIABLES
 // =====================================================
 char data[64];
+
+int objetivoHombro = 884;
 
 // =====================================================
 // MAPEO ANGULO -> PWM
@@ -60,8 +69,6 @@ void setup() {
 
   Wire.begin();
 
-  // IMPORTANTE
-  // Mejora estabilidad I2C
   Wire.setClock(100000);
 
   Serial.begin(115200);
@@ -70,17 +77,26 @@ void setup() {
 
   pca9685.setPWMFreq(50);
 
+  pinMode(IN1, OUTPUT);
+  pinMode(IN2, OUTPUT);
+
+  digitalWrite(IN1, LOW);
+  digitalWrite(IN2, LOW);
+
   delay(500);
 
-  // Posicion inicial
+  // ===============================================
+  // POSICION INICIAL
+  // ===============================================
   moverServo(THUMB_CH, 90);
   moverServo(INDEX_CH, 90);
   moverServo(MIDDLE_CH, 90);
   moverServo(RING_CH, 90);
   moverServo(PINKY_CH, 90);
+
   moverServo(WRIST_CH, 90);
+
   moverServo(BICEP_CH, 0);
-  moverServo(SHOULDER_CH, 90);
 }
 
 // =====================================================
@@ -99,7 +115,6 @@ void loop() {
       sizeof(data) - 1
     );
 
-    // terminar string
     data[len] = '\0';
 
     // ===========================================
@@ -126,9 +141,14 @@ void loop() {
       m = constrain(m,0,180);
       r = constrain(r,0,180);
       p = constrain(p,0,180);
+
       w = constrain(w,0,180);
+
       b = constrain(b,0,180);
-      h = constrain(h,0,180);
+
+      h = constrain(h,400,1022);
+
+      objetivoHombro = h;
 
       // =======================================
       // MOVER SERVOS
@@ -142,8 +162,40 @@ void loop() {
       moverServo(WRIST_CH,  w);
 
       moverServo(BICEP_CH,  b);
-
-      moverServo(SHOULDER_CH, h);
     }
   }
+
+  // ===========================================
+  // CONTROL HOMBRO
+  // ===========================================
+  int posicion = analogRead(POT_PIN);
+
+  if (posicion < objetivoHombro - 10) {
+
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+
+  }
+  else if (posicion > objetivoHombro + 10) {
+
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+
+  }
+  else {
+
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
+  }
+
+  // ===========================================
+  // DEBUG
+  // ===========================================
+  /*
+  Serial.print("Pot: ");
+  Serial.print(posicion);
+
+  Serial.print("  Obj: ");
+  Serial.println(objetivoHombro);
+  */
 }

@@ -11,6 +11,11 @@ from vision.hand_rotation import rotacion_mano_3d
 from control.fingers_controller import calcular_dedos
 from control.wrist_controller import calcular_muñeca
 
+from control.shoulder import (
+    calcular_hombro,
+    controlar_hombro
+)
+
 
 # =========================================================
 # SERIAL
@@ -53,10 +58,13 @@ servo_pinky = 0
 servo_wrist = WRIST_NEUTRO
 servo_bicep = 0
 
+servo_shoulder = POT_CENTER
+
 # =========================================================
 # VARIABLES
 # =========================================================
 angulo_bicep = 0
+angulo_hombro = 0
 
 thumb = 0
 index = 0
@@ -110,6 +118,16 @@ while True:
         servo_bicep = controlar_bicep(
             angulo_bicep,
             servo_bicep
+        )
+
+        angulo_hombro = calcular_hombro(
+            lm_pose,
+        "derecho"
+        )
+
+        servo_shoulder = controlar_hombro(
+            angulo_hombro,
+            servo_shoulder
         )
 
     # =====================================================
@@ -215,7 +233,7 @@ while True:
             f"{int(servo_pinky)},"
             f"{int(servo_wrist)},"
             f"{int(servo_bicep)},"
-            f"90"
+            f"{int(servo_shoulder)}"
         )
 
         # =============================================
@@ -231,6 +249,11 @@ while True:
         #    f"Bicep: {int(angulo_bicep)} | "
         #    f"Servo Bicep: {int(servo_bicep)}"
         #)
+
+        print(
+            f"Hombro: {angulo_hombro:.1f} | "
+             f"Objetivo: {servo_shoulder}"
+        )
 
         # =============================================
         # ENVIAR

@@ -12,6 +12,14 @@ alpha = 0.3
 open_hand = [160,170,170,170,170]
 closed_hand = [90,40,40,40,40]
 
-SERIAL_PORT = "COM8"
+SERIAL_PORT = "COM3"
 BAUDRATE = 115200
 
+# ===== SHOULDER =====
+
+POT_MIN = 400
+POT_CENTER = 884
+POT_MAX = 1022
+
+ROT_EXT = -75
+ROT_INT = 35
